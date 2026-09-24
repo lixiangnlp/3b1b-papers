@@ -142,7 +142,7 @@ def step_assemble(q: str, burn: bool) -> None:
     run(["ffmpeg", "-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", str(concat_list),
          "-c", "copy", str(joined)])
     if burn:
-        style = "FontName=PingFang SC,FontSize=20,Outline=1,Shadow=0,MarginV=24"
+        style = "FontName=PingFang SC,FontSize=13,Outline=1,Shadow=0,MarginV=6"
         run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(joined), "-vf",
              f"subtitles={srt}:force_style='{style}'", "-c:a", "copy", str(OUTPUT)])
     else:
