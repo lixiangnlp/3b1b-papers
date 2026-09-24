@@ -1,0 +1,3 @@
+# 本机 TTS 推理（仅 Apple Silicon macOS）
+mlx-audio[tts]>=0.5.6
+huggingface_hub>=1.0
