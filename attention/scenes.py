@@ -9,7 +9,11 @@ from __future__ import annotations
 import numpy as np
 from manim import *  # noqa: F401,F403
 
-from common import (
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "shared"))
+from common import (  # noqa: E402
     CJK_FONT, E_COLOR, K_COLOR, Q_COLOR, V_COLOR, VoiceScene, heat_color,
     softmax, token_box, zh,
 )

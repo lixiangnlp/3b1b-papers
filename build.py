@@ -1,19 +1,24 @@
 #!/usr/bin/env python3
-"""一键构建《Attention Is All You Need》中文讲解视频。
+"""一键构建 3b1b 风格的中文论文讲解视频。
 
-  python build.py tts                 # Qwen3-TTS(MLX) 逐句合成旁白 -> build/audio
+  --paper attention  《Attention Is All You Need》（默认）
+  --paper smhbench   《SMH-Bench》arXiv:2606.01912
+
+  python build.py tts                 # 逐句合成旁白（云端 TTS > 本机 Qwen3-TTS > 离线兜底）-> build/<paper>/audio
   python build.py render -q h         # Manim 渲染各场景（-q l/m/h/k = 480p15/720p30/1080p60/4K60）
-  python build.py assemble            # 拼接场景 + 生成字幕 -> build/attention_is_all_you_need.mp4
+  python build.py assemble            # 拼接场景 + 生成字幕 -> build/<paper>/<paper>.mp4
   python build.py all -q h            # 以上三步
   python build.py all --placeholder   # 没有 Apple Silicon 时：静音占位音频，先看画面节奏
 
-其余参数（--speaker / --instruct / --mode ...）会原样传给 tts/qwen3_tts.py。
+其余参数（--backend / --voice / --instruct ...）会原样传给 tts/synth.py。
 """
 
 from __future__ import annotations
 
 import argparse
+import importlib
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -22,12 +27,24 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-sys.path.insert(0, str(ROOT / "attention"))
-from narration import SCENE_ORDER  # noqa: E402
-
-BUILD = ROOT / "build"
 QUALITY_DIR = {"l": "480p15", "m": "720p30", "h": "1080p60", "p": "1440p60", "k": "2160p60"}
-OUTPUT = BUILD / "attention_is_all_you_need.mp4"
+OUTPUT_NAME = {"attention": "attention_is_all_you_need.mp4", "smhbench": "smh_bench.mp4"}
+PAPERS = sorted(p.name for p in ROOT.iterdir() if (p / "narration.py").exists())
+
+# 由 main() 按 --paper 设置
+PAPER = "attention"
+BUILD = ROOT / "build" / PAPER
+OUTPUT = BUILD / OUTPUT_NAME[PAPER]
+SCENE_ORDER: list[str] = []
+
+
+def select_paper(paper: str) -> None:
+    global PAPER, BUILD, OUTPUT, SCENE_ORDER
+    PAPER, BUILD = paper, ROOT / "build" / paper
+    OUTPUT = BUILD / OUTPUT_NAME.get(paper, f"{paper}.mp4")
+    os.environ["PAPER"] = paper
+    sys.path.insert(0, str(ROOT / paper))
+    SCENE_ORDER = importlib.import_module("narration").SCENE_ORDER
 
 
 def run(cmd: list[str], **kw) -> None:
@@ -41,7 +58,7 @@ def scene_video(scene: str, q: str) -> Path:
 
 # ------------------------------------------------------------------ steps
 def step_tts(extra: list[str], placeholder: bool) -> None:
-    cmd = [sys.executable, str(ROOT / "tts" / "qwen3_tts.py"), *extra]
+    cmd = [sys.executable, str(ROOT / "tts" / "synth.py"), "--paper", PAPER, *extra]
     if placeholder:
         cmd.append("--placeholder")
     run(cmd)
@@ -53,7 +70,7 @@ def step_render(q: str, scenes: list[str], jobs: int) -> None:
     def one(scene: str) -> tuple[str, int]:
         # 每个场景单独的 media 目录，避免并行时 LaTeX 缓存互相覆盖
         cmd = [sys.executable, "-m", "manim", "render", f"-q{q}", "--media_dir",
-               str(BUILD / "media" / scene), str(ROOT / "attention" / "scenes.py"), scene]
+               str(BUILD / "media" / scene), str(ROOT / PAPER / "scenes.py"), scene]
         log = BUILD / "logs" / f"{scene}.log"
         with log.open("w") as f:
             code = subprocess.run(cmd, stdout=f, stderr=subprocess.STDOUT, cwd=ROOT).returncode
@@ -142,7 +159,8 @@ def step_assemble(q: str, burn: bool) -> None:
     run(["ffmpeg", "-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", str(concat_list),
          "-c", "copy", str(joined)])
     if burn:
-        style = "FontName=PingFang SC,FontSize=13,Outline=1,Shadow=0,MarginV=6"
+        font = os.environ.get("CJK_FONT", "PingFang SC" if sys.platform == "darwin" else "Noto Sans CJK SC")
+        style = f"FontName={font},FontSize=13,Outline=1,Shadow=0,MarginV=6"
         run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(joined), "-vf",
              f"subtitles={srt}:force_style='{style}'", "-c:a", "copy", str(OUTPUT)])
     else:
@@ -156,12 +174,14 @@ def step_assemble(q: str, burn: bool) -> None:
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("step", choices=["tts", "render", "assemble", "all"])
+    ap.add_argument("--paper", choices=PAPERS, default="attention")
     ap.add_argument("-q", "--quality", choices=list(QUALITY_DIR), default="h")
     ap.add_argument("-j", "--jobs", type=int, default=2, help="并行渲染的场景数")
     ap.add_argument("--scenes", nargs="*", default=None, help="只渲染这些场景")
     ap.add_argument("--placeholder", action="store_true", help="用静音占位音频代替 TTS")
     ap.add_argument("--burn-subs", action="store_true", help="把字幕烧进画面（需要 ffmpeg 带 libass）")
     args, extra = ap.parse_known_args()
+    select_paper(args.paper)
 
     if not shutil.which("ffmpeg"):
         sys.exit("需要 ffmpeg（macOS: brew install ffmpeg）")

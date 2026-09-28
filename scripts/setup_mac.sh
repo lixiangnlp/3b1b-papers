@@ -58,4 +58,4 @@ with wave.open("models/smoke_test.wav", "wb") as w:
     w.setnchannels(1); w.setsampwidth(2); w.setframerate(m.sample_rate); w.writeframes(pcm.tobytes())
 print(f"OK: {len(a)/m.sample_rate:.1f}s 音频，用时 {time.time()-t:.1f}s -> models/smoke_test.wav")
 PY
-echo "✅ 环境就绪。下一步：source .venv/bin/activate && python build.py all -q h"
+echo "✅ 环境就绪。启动本机 TTS 服务：python tts/qwen3_server.py &；然后：python build.py all --paper smhbench -q h"

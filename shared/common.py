@@ -1,4 +1,4 @@
-"""场景公共设施：旁白同步、中文字体、3b1b 风格的小部件。"""
+"""各篇论文共用的场景设施：旁白同步、中文字体、3b1b 风格的小部件。"""
 
 from __future__ import annotations
 
@@ -18,11 +18,13 @@ from manim import (
     ManimColor,
 )
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+# narration 由场景文件所在目录提供（manim 会把该目录加入 sys.path）
+import narration as _narration  # noqa: E402
 from narration import NARRATION_BY_KEY  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
-BUILD = ROOT / "build"
+PAPER = os.environ.get("PAPER") or Path(_narration.__file__).resolve().parent.name
+BUILD = ROOT / "build" / PAPER
 AUDIO_DIR = BUILD / "audio"
 CUES_DIR = BUILD / "cues"
 MANIFEST = AUDIO_DIR / "manifest.json"

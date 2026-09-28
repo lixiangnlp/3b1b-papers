@@ -1,19 +1,12 @@
-"""用本机部署的 Qwen3-TTS-1.7B（MLX，Apple Silicon）为旁白逐句生成音频。
+"""Qwen3-TTS-1.7B（MLX，Apple Silicon）推理封装 + 公共音频工具。
 
-输出:
-  build/audio/<key>.wav        每句一个 24kHz 单声道 wav
-  build/audio/manifest.json    {key: {file, duration, hash}}，供 Manim 场景同步
+逐句合成的主入口已移到 tts/synth.py（支持云端 TTS / 本机服务 / 多种后端）；
+本文件保留 QwenTTS 类，供 synth.py 与 qwen3_server.py 复用。
 
-用法:
-  python tts/qwen3_tts.py                          # 生成全部（已生成且未修改的句子会跳过）
-  python tts/qwen3_tts.py --only qkv_1 qkv_2       # 只生成指定句子
-  python tts/qwen3_tts.py --speaker Serena --instruct "语速稍快，热情"
-  python tts/qwen3_tts.py --placeholder            # 无 MLX 环境：按字数生成静音占位音频
 """
 
 from __future__ import annotations
 
-import argparse
 import hashlib
 import json
 import sys
@@ -24,11 +17,6 @@ from pathlib import Path
 import numpy as np
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "attention"))
-from narration import NARRATION, speakable  # noqa: E402
-
-AUDIO_DIR = ROOT / "build" / "audio"
-MANIFEST = AUDIO_DIR / "manifest.json"
 
 DEFAULT_MODEL = "mlx-community/Qwen3-TTS-12Hz-1.7B-CustomVoice-bf16"
 LOCAL_MODEL = ROOT / "models" / "Qwen3-TTS-12Hz-1.7B-CustomVoice-bf16"
@@ -106,70 +94,11 @@ class QwenTTS:
         return np.concatenate(chunks) if chunks else np.zeros(0, np.float32)
 
 
-def placeholder_audio(text: str, sr: int = 24000) -> np.ndarray:
-    sys.path.insert(0, str(ROOT / "attention"))
-    from common import estimate_duration
-    return np.zeros(int(estimate_duration(text) * sr), np.float32)
-
-
 def main() -> None:
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--model", default=None,
-                    help=f"HF 仓库名或本地目录（默认优先 {LOCAL_MODEL.relative_to(ROOT)}，否则 {DEFAULT_MODEL}）")
-    ap.add_argument("--mode", choices=["custom", "design", "base"], default="custom",
-                    help="custom=预置音色+情感指令（1.7B-CustomVoice）；design=文字描述音色（1.7B-VoiceDesign）")
-    ap.add_argument("--speaker", default=DEFAULT_SPEAKER,
-                    help="CustomVoice 音色：Vivian / Serena / Uncle_Fu / Dylan / Eric / Ryan / Aiden")
-    ap.add_argument("--instruct", default=None, help="情感/风格指令（design 模式下为音色描述）")
-    ap.add_argument("--temperature", type=float, default=0.7)
-    ap.add_argument("--seed", type=int, default=42, help="固定随机种子，让重跑结果更稳定")
-    ap.add_argument("--only", nargs="*", help="只生成这些 key")
-    ap.add_argument("--force", action="store_true", help="忽略缓存，全部重新生成")
-    ap.add_argument("--placeholder", action="store_true", help="不调用模型，生成按字数估时的静音占位")
-    args = ap.parse_args()
-
-    model = args.model or (str(LOCAL_MODEL) if LOCAL_MODEL.exists() else DEFAULT_MODEL)
-    instruct = args.instruct if args.instruct is not None else (
-        DEFAULT_INSTRUCT if args.mode == "custom" else DEFAULT_DESIGN if args.mode == "design" else None)
-    cfg = {"model": Path(model).name, "mode": args.mode, "speaker": args.speaker,
-           "instruct": instruct, "temperature": args.temperature, "seed": args.seed,
-           "placeholder": args.placeholder}
-
-    AUDIO_DIR.mkdir(parents=True, exist_ok=True)
-    manifest = json.loads(MANIFEST.read_text("utf-8")) if MANIFEST.exists() else {}
-
-    lines = [(k, t) for scene in NARRATION.values() for k, t in scene]
-    if args.only:
-        lines = [(k, t) for k, t in lines if k in set(args.only)]
-
-    tts = None
-    total = 0.0
-    for idx, (key, text) in enumerate(lines, 1):
-        spoken = speakable(text)
-        h = line_hash(spoken, cfg)
-        out = AUDIO_DIR / f"{key}.wav"
-        entry = manifest.get(key)
-        if not args.force and entry and entry.get("hash") == h and out.exists():
-            total += entry["duration"]
-            print(f"[{idx:02d}/{len(lines)}] {key}: 已缓存 {entry['duration']:.1f}s")
-            continue
-
-        t0 = time.time()
-        if args.placeholder:
-            sr, audio = 24000, placeholder_audio(text)
-        else:
-            if tts is None:
-                tts = QwenTTS(model, args.mode, args.speaker, instruct, args.temperature, args.seed)
-            sr = tts.sr
-            audio = trim_and_normalize(tts.synth(spoken), sr)
-        write_wav(out, audio, sr)
-        dur = len(audio) / sr
-        total += dur
-        manifest[key] = {"file": out.name, "duration": round(dur, 3), "hash": h}
-        MANIFEST.write_text(json.dumps(manifest, ensure_ascii=False, indent=1), "utf-8")
-        print(f"[{idx:02d}/{len(lines)}] {key}: {dur:.1f}s 音频，用时 {time.time() - t0:.1f}s")
-
-    print(f"[tts] 完成：{len(lines)} 句，总时长 {total / 60:.1f} 分钟 -> {MANIFEST.relative_to(ROOT)}")
+    """兼容旧用法：等价于 ``python tts/synth.py --backend qwen-mlx``。"""
+    sys.argv[1:1] = ["--backend", "qwen-mlx"]
+    from synth import main as synth_main
+    synth_main()
 
 
 if __name__ == "__main__":
