@@ -6,22 +6,31 @@
 | `--paper` | 论文 | 时长 |
 |---|---|---|
 | `attention` | Vaswani et al., *Attention Is All You Need*（NeurIPS 2017） | ~10 分钟 · 10 场景 |
-| `smhbench` | Kuan Li et al., *SMH-Bench: Benchmarking LLM Agents for Environment-Grounded Reasoning and Action in Smart Homes*（[arXiv:2606.01912](https://arxiv.org/abs/2606.01912)） | ~7 分钟 · 8 场景 |
+| `smhbench` | Kuan Li et al., *SMH-Bench: Benchmarking LLM Agents for Environment-Grounded Reasoning and Action in Smart Homes*（[arXiv:2606.01912](https://arxiv.org/abs/2606.01912)） | ~20 分钟 · 17 场景 |
 
-## SMH-Bench 分集
+## SMH-Bench 分集（完整版，依据论文全文）
 
 | # | 场景 | 内容 |
 |---|------|------|
-| 1 | `S01_Intro` | “我要看电影了”：为什么智能家居不是指令翻译 |
-| 2 | `S02_Problem` | 静态指令→API 比对的盲点；状态决定正确答案 |
-| 3 | `S03_HomeEnv` | 家 → 房间 → 设备 → 服务/状态；执行时报错；四类验证方式 |
-| 4 | `S04_Benchmark` | 1100 个人工审核任务、7 大类 22 子类、语言鲁棒性、三档家庭复杂度（最多 135 台设备） |
-| 5 | `S05_Settings` | 直接推理 DR vs. 环境交互智能体 EIA（ReAct、局部可观测） |
-| 6 | `S06_Results` | 13 个 LLM：显式控制/查询强，自动化/歧义/个性化弱，随家庭复杂度下降（柱状/折线为**示意**） |
-| 7 | `S07_Errors` | EIA：IE 指令执行错误（冗余调用、参数边界混淆）；DR：MS 信息缺失 / AV 动作校验 |
-| 8 | `S08_Outro` | 四个方向：状态落地、澄清策略、偏好感知、规范工具调用 |
+| 1 | `S01_Intro` | “调成昨晚的温度”：理解、推理、记忆、行动；作者与机构；三部分提纲 |
+| 2 | `S02_Motivation` | 静态指令→API 映射的盲点；表 1：HomeBench / SimuHome / SMH-Bench 能力对比 |
+| 3 | `S03_Formulation` | Hₜ=(R,D,φ,Xₜ,S)、动作与状态转移、实例 τ=(H₀,u,C,M,g)、四种输出、无关状态保持 |
+| 4 | `S04_HomeEnv` | 嵌套房间的状态空间、属性与服务、操作引擎的合法性检查、查询/控制接口 |
+| 5 | `S05_Control` | TC1 原子控制（含带噪声纠错）；TC2 组合控制五子类，“湿度高于 60%”例子的逐步执行 |
+| 6 | `S06_Ambiguity` | TC3 模糊意图（执行 vs 澄清、三子类）；TC4 自动化调度三种触发 |
+| 7 | `S07_Context` | TC5 多轮交互四子类；TC6 短期/长期记忆；TC7 环境查询 |
+| 8 | `S08_Pipeline` | 环境优先的四步构建：家实例、GPT-5 规格与指令、HomeEnv 校验、人工审核 |
+| 9 | `S09_Stats` | 图 3 类别分布；简单/中等/复杂 550/330/220；房间与设备规模 |
+| 10 | `S10_Protocol` | 规则校验 + 无关状态保持、TC4 双重校验、GPT-5 裁判与 98% 人机一致率 |
+| 11 | `S11_Settings` | DR（完整上下文、一次作答、重放）vs EIA（ReAct、query/control_device、快照差分） |
+| 12 | `S12_Overall` | 表 2：13 个模型 EIA 平均成功率排行 |
+| 13 | `S13_Capability` | 表 2 热力图：TC1/TC7 最易，TC4 为共同瓶颈 |
+| 14 | `S14_Modes` | ∆(EIA−DR)；Claude-Sonnet-4.6 TC3、GPT-5.4 TC4 的对比；级联误差 |
+| 15 | `S15_Complexity` | 图 4 复杂度下降、DeepSeek-V3.2 关闭思考的消融（图 5）、子类分工 |
+| 16 | `S16_Errors` | 表 3 六类错误与图 6 DeepSeek-V3.2 错误分布 |
+| 17 | `S17_Outro` | 附录一览（简介）、总结与四个方向 |
 
-> 结果场景中的柱子与折线只表示论文报告的**定性趋势**，并非论文中的具体数值，画面上已标注“示意”。
+图表数值均取自论文正文；图 4 只绘制正文给出的两个模型的端点数值。
 
 ## 目录
 
@@ -94,6 +103,13 @@ GOOGLE_API_KEY=... python build.py tts --paper smhbench --backend google --force
 
 # 只重新合成某几句
 python tts/synth.py --paper smhbench --only res_3 err_2 --force
+```
+
+最终配音（MiniMax speech-2.8-turbo · male-qn-qingse · 语速 1.0）：
+
+```bash
+export MINIMAX_API_KEY=...        # 不要写进仓库
+python build.py all --paper smhbench -q h --burn-subs --backend minimax --force
 ```
 
 - **缓存**：manifest 里记录每句文本哈希与所用后端；文本未变化的句子不会重复合成。显式指定 `--backend` 时，其他后端生成的句子会被重新合成。
