@@ -5,6 +5,7 @@
   build/<paper>/audio/manifest.json    {key: {file, duration, hash, backend}}，供 Manim 场景同步
 
 后端（--backend auto 时按此顺序选第一个可用的）:
+  minimax    MiniMax T2A v2（需 MINIMAX_API_KEY；默认 speech-2.8-turbo + male-qn-qingse）
   polly      AWS Polly 神经网络语音（需 AWS 凭证；中文音色 Zhiyu）
   google     Google Cloud TTS（需 GOOGLE_API_KEY 或 gcloud 访问令牌；默认 Chirp3-HD 音色）
   qwen-http  本机 Qwen3-TTS-1.7B-MLX 服务（python tts/qwen3_server.py 启动，QWEN_TTS_URL 可改地址）
@@ -55,6 +56,39 @@ def decode_audio(data: bytes) -> tuple[np.ndarray, int]:
 
 
 # ------------------------------------------------------------------ 后端
+class MiniMax:
+    """MiniMax T2A v2（同步 HTTP）。密钥只从环境变量 MINIMAX_API_KEY 读取。"""
+    name = "minimax"
+
+    def __init__(self, voice: str | None = None, speed: float = 1.0):
+        self.key = os.environ["MINIMAX_API_KEY"]
+        self.url = f"https://{os.environ.get('MINIMAX_HOST', 'api.minimaxi.com')}/v1/t2a_v2"
+        self.model = os.environ.get("MINIMAX_MODEL", "speech-2.8-turbo")
+        self.voice = voice or "male-qn-qingse"
+        self.speed = speed
+        self.synth("你好")
+
+    def synth(self, text: str):
+        body = {"model": self.model, "text": text, "stream": False, "language_boost": "Chinese",
+                "output_format": "hex",
+                "voice_setting": {"voice_id": self.voice, "speed": self.speed, "vol": 1, "pitch": 0},
+                "audio_setting": {"sample_rate": 32000, "bitrate": 128000, "format": "mp3", "channel": 1}}
+        req = urllib.request.Request(self.url, json.dumps(body).encode(), {
+            "Content-Type": "application/json", "Authorization": f"Bearer {self.key}"})
+        for attempt in range(4):
+            try:
+                with urllib.request.urlopen(req, timeout=120) as r:
+                    resp = json.load(r)
+                base = resp.get("base_resp", {})
+                if base.get("status_code", 0) != 0:
+                    raise RuntimeError(f"MiniMax {base.get('status_code')}: {base.get('status_msg')}")
+                return decode_audio(bytes.fromhex(resp["data"]["audio"]))
+            except (OSError, RuntimeError):
+                if attempt == 3:
+                    raise
+                time.sleep(2 ** (attempt + 1))
+
+
 class Polly:
     name = "polly"
 
@@ -163,9 +197,9 @@ class Placeholder:
         return np.zeros(int(dur * 24000), np.float32), 24000
 
 
-BACKENDS = {"polly": Polly, "google": Google, "qwen-http": QwenHTTP, "qwen-mlx": QwenMLX,
+BACKENDS = {"minimax": MiniMax, "polly": Polly, "google": Google, "qwen-http": QwenHTTP, "qwen-mlx": QwenMLX,
             "kokoro": Kokoro, "placeholder": Placeholder}
-AUTO_ORDER = ["polly", "google", "qwen-http", "qwen-mlx", "kokoro"]
+AUTO_ORDER = ["minimax", "polly", "google", "qwen-http", "qwen-mlx", "kokoro"]
 
 
 def make_backend(name: str, voice: str | None, instruct: str | None, speed: float):
@@ -173,7 +207,7 @@ def make_backend(name: str, voice: str | None, instruct: str | None, speed: floa
     for n in names:
         kw = {"voice": voice} if n in ("polly", "google") else \
              {"voice": voice, "instruct": instruct} if n.startswith("qwen") else \
-             {"voice": voice, "speed": speed} if n == "kokoro" else {}
+             {"voice": voice, "speed": speed} if n in ("kokoro", "minimax") else {}
         try:
             b = BACKENDS[n](**kw)
             print(f"[tts] 使用后端：{n}")
@@ -191,7 +225,7 @@ def main() -> None:
     ap.add_argument("--voice", "--speaker", dest="voice", default=None,
                     help="音色：Polly VoiceId / Google 音色名 / Qwen speaker / Kokoro 说话人编号")
     ap.add_argument("--instruct", default=None, help="Qwen3-TTS 风格指令")
-    ap.add_argument("--speed", type=float, default=1.0, help="Kokoro 语速")
+    ap.add_argument("--speed", type=float, default=1.0, help="语速（MiniMax / Kokoro）")
     ap.add_argument("--only", nargs="*", help="只生成这些 key")
     ap.add_argument("--force", action="store_true", help="忽略缓存")
     ap.add_argument("--placeholder", action="store_true", help="等价于 --backend placeholder")

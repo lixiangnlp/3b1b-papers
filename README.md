@@ -70,6 +70,7 @@ python build.py assemble --paper smhbench --burn-subs         # 拼接，并把�
 
 | 后端 | 条件 | 说明 |
 |---|---|---|
+| `minimax` | `MINIMAX_API_KEY` | MiniMax T2A v2，默认 `speech-2.8-turbo` + `male-qn-qingse`（`MINIMAX_MODEL`/`MINIMAX_HOST`/`--voice`/`--speed` 可改） |
 | `polly` | 有效的 AWS 凭证 | AWS Polly 神经网络中文音色 `Zhiyu` |
 | `google` | `GOOGLE_API_KEY` 或 gcloud 登录 | Google Cloud TTS，默认 `cmn-CN-Chirp3-HD-Charon` |
 | `qwen-http` | 本机已启动 `tts/qwen3_server.py` | Qwen3-TTS-1.7B-MLX 服务（地址可用 `QWEN_TTS_URL` 覆盖） |
