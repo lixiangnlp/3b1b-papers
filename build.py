@@ -3,6 +3,7 @@
 
   --paper attention  《Attention Is All You Need》（默认）
   --paper smhbench   《SMH-Bench》arXiv:2606.01912
+  --paper tokenization 《Tokenization: A Survey for Modern NLP》
 
   python build.py tts                 # 逐句合成旁白（云端 TTS > 本机 Qwen3-TTS > 离线兜底）-> build/<paper>/audio
   python build.py render -q h         # Manim 渲染各场景（-q l/m/h/k = 480p15/720p30/1080p60/4K60）
@@ -28,7 +29,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 QUALITY_DIR = {"l": "480p15", "m": "720p30", "h": "1080p60", "p": "1440p60", "k": "2160p60"}
-OUTPUT_NAME = {"attention": "attention_is_all_you_need.mp4", "smhbench": "smh_bench.mp4"}
+OUTPUT_NAME = {"attention": "attention_is_all_you_need.mp4", "smhbench": "smh_bench.mp4",
+               "tokenization": "tokenization_survey.mp4"}
 PAPERS = sorted(p.name for p in ROOT.iterdir() if (p / "narration.py").exists())
 
 # 由 main() 按 --paper 设置
