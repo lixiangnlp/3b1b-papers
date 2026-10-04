@@ -1,12 +1,13 @@
 # 3b1b-papers · 3Blue1Brown 风格中文论文讲解
 
 用 [Manim](https://www.manim.community/) 制作 3Blue1Brown 风格的中文论文讲解视频，
-旁白逐句合成，动画与语音自动对齐。目前包含两期：
+旁白逐句合成，动画与语音自动对齐。目前包含三期：
 
 | `--paper` | 论文 | 时长 |
 |---|---|---|
 | `attention` | Vaswani et al., *Attention Is All You Need*（NeurIPS 2017） | ~10 分钟 · 10 场景 |
 | `smhbench` | Kuan Li et al., *SMH-Bench: Benchmarking LLM Agents for Environment-Grounded Reasoning and Action in Smart Homes*（[arXiv:2606.01912](https://arxiv.org/abs/2606.01912)） | ~20 分钟 · 17 场景 |
+| `tokenization` | Cognetta, Pinter et al.（32 位作者），*Tokenization: A Survey for Modern NLP*（2026.09） | ~33 分钟 · 20 场景 |
 
 ## SMH-Bench 分集（完整版，依据论文全文）
 
@@ -32,10 +33,25 @@
 
 图表数值均取自论文正文；图 4 只绘制正文给出的两个模型的端点数值。
 
+## Tokenization 综述分集
+
+| # | 场景 | 内容 |
+|---|------|------|
+| 1–2 | `S01_Intro` `S02_Pipeline` | strawberry 数 r；作者与机构；图 1.1 分词流水线（规范化→预分词→分词→ID→嵌入） |
+| 3–4 | `S03_Granularity` `S04_WhyMatters` | 词/字符/字节/子词的取舍；表 2.1 嵌入参数占比；边缘概率；图 2.1 研究占比 |
+| 5–8 | `S05_BPE` … `S08_Inference` | BPE 真实合并演示与推理重放；BPE 变体；Unigram/WordPiece；例 3.3 的 MaxMatch/FLOTA/PathPiece 格图；BPE-dropout |
+| 9–11 | `S09_Pretokenization` `S10_Scripts` `S11_Multilingual` | 正则与数字切分；表 5.3 字符 vs 字节；韩文音节；词元税与图 6.2 成本；表 5.2 中日韩词元占比 |
+| 12–13 | `S12_Evaluation` `S13_NonCanonical` | 每字节比特数、CUTE 字母级任务、内部指标；非标准切分与子词正则化 |
+| 14–15 | `S14_ByteLatent` `S15_Visual` | 分层字节模型、BLT 熵切分（例 9.2）、Bolmo；PIXEL、DeepSeek-OCR |
+| 16–17 | `S16_ModernLLMs` `S17_Transfer` | 表 11.1/11.2 前沿分词器与 HF 普查；控制词元注入；Rathaus 合并阻塞例子；跨分词器蒸馏 |
+| 18–20 | `S18_Theory` `S19_Security` `S20_Outro` | BPE 与最优解的例子、NP 难与 1/3 近似；同形字攻击、词元修复；结论与开放问题 |
+
+标注“示意”的画面为讲解用的说明性例子，其余数字均取自论文。
+
 ## 目录
 
 ```
-attention/  smhbench/
+attention/  smhbench/  tokenization/
   narration.py   # 中文旁白稿（按场景分句，key 全片唯一）+ TTS 读音替换表
   scenes.py      # Manim 场景
 shared/
