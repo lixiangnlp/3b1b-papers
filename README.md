@@ -1,13 +1,14 @@
 # 3b1b-papers · 3Blue1Brown 风格中文论文讲解
 
 用 [Manim](https://www.manim.community/) 制作 3Blue1Brown 风格的中文论文讲解视频，
-旁白逐句合成，动画与语音自动对齐。目前包含三期：
+旁白逐句合成，动画与语音自动对齐。目前包含四期：
 
 | `--paper` | 论文 | 时长 |
 |---|---|---|
 | `attention` | Vaswani et al., *Attention Is All You Need*（NeurIPS 2017） | ~10 分钟 · 10 场景 |
 | `smhbench` | Kuan Li et al., *SMH-Bench: Benchmarking LLM Agents for Environment-Grounded Reasoning and Action in Smart Homes*（[arXiv:2606.01912](https://arxiv.org/abs/2606.01912)） | ~20 分钟 · 17 场景 |
 | `tokenization` | Cognetta, Pinter et al.（32 位作者），*Tokenization: A Survey for Modern NLP*（2026.09） | ~33 分钟 · 20 场景 |
+| `qahe` | 科普：量子反常霍尔效应的前世今生、原理、影响与发现者薛其坤 | ~17 分钟 · 16 场景 |
 
 ## SMH-Bench 分集（完整版，依据论文全文）
 
@@ -48,10 +49,22 @@
 
 标注“示意”的画面为讲解用的说明性例子，其余数字均取自论文。
 
+## 量子反常霍尔效应科普分集
+
+| # | 场景 | 内容 |
+|---|------|------|
+| 1–3 | `S01_Intro` `S02_Hall` `S03_Anomalous` | 发热与“电子高速公路”；1879 霍尔效应与洛伦兹力；1880 反常霍尔效应与贝里曲率 |
+| 4–6 | `S04_QHE` `S05_Edge` `S06_Topology` | 1980 整数量子霍尔效应台阶（h/νe²）；回旋轨道与单向边缘态；拓扑与陈数（TKNN 1982） |
+| 7–10 | `S07_Haldane` … `S10_Mechanism` | 霍尔丹 1988 模型；拓扑绝缘体；2010 磁性拓扑绝缘体配方与四个条件；狄拉克锥开隙、½+½=1 |
+| 11–12 | `S11_Experiment` `S12_Xue` | MBE+STM、四年上千样品、30 mK 零场 h/e²（Science 2013）；薛其坤生平与荣誉 |
+| 13–16 | `S13_Physics` … `S16_Outro` | 霍尔家族与后续进展（锰铋碲、转角石墨烯、分数量子反常霍尔）；零场电阻标准、低功耗与拓扑量子计算前景；温度挑战；时间线回顾 |
+
+曲线均为示意图；年份、h/e²、30 mK 等数值取自原始文献与公开资料。
+
 ## 目录
 
 ```
-attention/  smhbench/  tokenization/
+attention/  smhbench/  tokenization/  qahe/
   narration.py   # 中文旁白稿（按场景分句，key 全片唯一）+ TTS 读音替换表
   scenes.py      # Manim 场景
 shared/
