@@ -150,7 +150,7 @@ def step_assemble(q: str, burn: bool) -> None:
          "-c", "copy", str(joined)])
     if burn:
         font = os.environ.get("SUB_FONT") or ("PingFang SC" if sys.platform == "darwin" else "Noto Sans CJK SC")
-        style = f"FontName={font},FontSize=13,Outline=1,Shadow=0,MarginV=6"
+        style = f"FontName={font},{PROJ.sub_style}"
         run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(joined), "-vf",
              f"subtitles={srt}:force_style='{style}'", "-c:a", "copy", str(OUTPUT)])
     else:
