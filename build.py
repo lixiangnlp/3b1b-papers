@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""一键构建《Attention Is All You Need》中文讲解视频。
+"""一键构建中文讲解视频（默认项目 attention；--project riemann 为黎曼猜想那一期）。
 
   python build.py tts                 # Qwen3-TTS(MLX) 逐句合成旁白 -> build/audio
+  python build.py tts --project riemann --tts minimax   # MiniMax 语音（需 MINIMAX_API_KEY）
   python build.py render -q h         # Manim 渲染各场景（-q l/m/h/k = 480p15/720p30/1080p60/4K60）
   python build.py assemble            # 拼接场景 + 生成字幕 -> build/attention_is_all_you_need.mp4
   python build.py all -q h            # 以上三步
@@ -13,7 +14,9 @@
 from __future__ import annotations
 
 import argparse
+import importlib
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -22,12 +25,15 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-sys.path.insert(0, str(ROOT / "attention"))
-from narration import SCENE_ORDER  # noqa: E402
+sys.path.insert(0, str(ROOT))
+from projects import DEFAULT_PROJECT, PROJECTS, get_project  # noqa: E402
 
-BUILD = ROOT / "build"
 QUALITY_DIR = {"l": "480p15", "m": "720p30", "h": "1080p60", "p": "1440p60", "k": "2160p60"}
-OUTPUT = BUILD / "attention_is_all_you_need.mp4"
+# 由 main() 按 --project 设置
+PROJ = None
+BUILD: Path = ROOT / "build"
+OUTPUT: Path = BUILD / "attention_is_all_you_need.mp4"
+SCENE_ORDER: list[str] = []
 
 
 def run(cmd: list[str], **kw) -> None:
@@ -40,8 +46,9 @@ def scene_video(scene: str, q: str) -> Path:
 
 
 # ------------------------------------------------------------------ steps
-def step_tts(extra: list[str], placeholder: bool) -> None:
-    cmd = [sys.executable, str(ROOT / "tts" / "qwen3_tts.py"), *extra]
+def step_tts(extra: list[str], placeholder: bool, engine: str) -> None:
+    script = "minimax_tts.py" if engine == "minimax" and not placeholder else "qwen3_tts.py"
+    cmd = [sys.executable, str(ROOT / "tts" / script), "--project", PROJ.name, *extra]
     if placeholder:
         cmd.append("--placeholder")
     run(cmd)
@@ -53,7 +60,7 @@ def step_render(q: str, scenes: list[str], jobs: int) -> None:
     def one(scene: str) -> tuple[str, int]:
         # 每个场景单独的 media 目录，避免并行时 LaTeX 缓存互相覆盖
         cmd = [sys.executable, "-m", "manim", "render", f"-q{q}", "--media_dir",
-               str(BUILD / "media" / scene), str(ROOT / "attention" / "scenes.py"), scene]
+               str(BUILD / "media" / scene), str(PROJ.src / "scenes.py"), scene]
         log = BUILD / "logs" / f"{scene}.log"
         with log.open("w") as f:
             code = subprocess.run(cmd, stdout=f, stderr=subprocess.STDOUT, cwd=ROOT).returncode
@@ -142,7 +149,8 @@ def step_assemble(q: str, burn: bool) -> None:
     run(["ffmpeg", "-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", str(concat_list),
          "-c", "copy", str(joined)])
     if burn:
-        style = "FontName=PingFang SC,FontSize=13,Outline=1,Shadow=0,MarginV=6"
+        font = os.environ.get("SUB_FONT") or ("PingFang SC" if sys.platform == "darwin" else "Noto Sans CJK SC")
+        style = f"FontName={font},FontSize=13,Outline=1,Shadow=0,MarginV=6"
         run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(joined), "-vf",
              f"subtitles={srt}:force_style='{style}'", "-c:a", "copy", str(OUTPUT)])
     else:
@@ -156,6 +164,8 @@ def step_assemble(q: str, burn: bool) -> None:
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("step", choices=["tts", "render", "assemble", "all"])
+    ap.add_argument("--project", choices=list(PROJECTS), default=DEFAULT_PROJECT)
+    ap.add_argument("--tts", choices=["qwen", "minimax"], default="qwen", help="语音合成引擎")
     ap.add_argument("-q", "--quality", choices=list(QUALITY_DIR), default="h")
     ap.add_argument("-j", "--jobs", type=int, default=2, help="并行渲染的场景数")
     ap.add_argument("--scenes", nargs="*", default=None, help="只渲染这些场景")
@@ -163,10 +173,15 @@ def main() -> None:
     ap.add_argument("--burn-subs", action="store_true", help="把字幕烧进画面（需要 ffmpeg 带 libass）")
     args, extra = ap.parse_known_args()
 
+    global PROJ, BUILD, OUTPUT, SCENE_ORDER
+    PROJ = get_project(args.project)
+    BUILD, OUTPUT = PROJ.build, PROJ.output_path
+    SCENE_ORDER = importlib.import_module("narration").SCENE_ORDER
+
     if not shutil.which("ffmpeg"):
         sys.exit("需要 ffmpeg（macOS: brew install ffmpeg）")
     if args.step in ("tts", "all"):
-        step_tts(extra, args.placeholder)
+        step_tts(extra, args.placeholder, args.tts)
     if args.step in ("render", "all"):
         step_render(args.quality, args.scenes or SCENE_ORDER, args.jobs)
     if args.step in ("assemble", "all"):

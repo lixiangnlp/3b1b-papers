@@ -1,4 +1,15 @@
-# 3b1b-papers · Attention Is All You Need
+# 3b1b-papers
+
+用 3Blue1Brown 风格制作的中文数学 / 论文讲解视频。每一期是一个独立目录，共用 `build.py` 和 `tts/`：
+
+| 项目 | 目录 | 说明 |
+|------|------|------|
+| Attention Is All You Need | `attention/` | 本页下文 |
+| 黎曼猜想被证明了？——Levent Alpöge 与 Claude | `riemann/` | 见 [riemann/README.md](riemann/README.md)，`--project riemann` |
+
+---
+
+## Attention Is All You Need
 
 用 3Blue1Brown 风格（[Manim](https://www.manim.community/)）制作的中文论文讲解视频，
 旁白由**本机部署**的 **Qwen3-TTS-1.7B（MLX）** 逐句合成，动画与语音自动对齐。
@@ -96,7 +107,9 @@ with self.voice("qkv_4"):          # 在当前时刻插入 build/audio/qkv_4.wav
 ## 其他平台
 
 Manim 渲染在 Linux / Windows 上同样可用（需要 ffmpeg、pango、LaTeX），但 MLX 只能跑在 Apple Silicon 上。
-可以在 Mac 上跑 `python build.py tts` 生成 `build/audio/`，再拷到别的机器上 `render` + `assemble`。
+可以在 Mac 上跑 `python build.py tts` 生成 `build/audio/`，再拷到别的机器上 `render` + `assemble`；
+也可以直接用同一个模型的 PyTorch 版（`pip install -r requirements-tts-torch.txt`，CPU 约 5~6 倍实时）：
+`python tts/qwen3_tts.py --backend torch`。另有 MiniMax 云端语音：`python build.py tts --tts minimax`（需 `MINIMAX_API_KEY`）。
 
 中文字体按 `PingFang SC → Hiragino Sans GB → Source Han Sans SC → Noto Sans CJK SC → Microsoft YaHei → WenQuanYi Zen Hei` 顺序自动选择，也可用环境变量 `CJK_FONT` 指定。
 

@@ -1,0 +1,4 @@
+# 非 Apple Silicon 机器上的本机 Qwen3-TTS（PyTorch；CPU 约 5~6 倍实时）
+# CPU 版 torch 可先装：pip install --index-url https://download.pytorch.org/whl/cpu torch torchaudio
+qwen-tts>=0.1.1
+soundfile
