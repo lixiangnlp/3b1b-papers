@@ -1,0 +1,14 @@
+{
+  "name": "xiaoai-nine-years",
+  "version": "1.0.0",
+  "private": true,
+  "description": "小爱同学 · 九年（2017 → 2026）：用代码逐帧生成的动画短片",
+  "scripts": {
+    "build": "python3 build.py",
+    "stills": "node render.js stills",
+    "test": "node test_stateless.js"
+  },
+  "dependencies": {
+    "misans": "^5.0.0"
+  }
+}

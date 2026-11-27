@@ -105,3 +105,9 @@ Manim 渲染在 Linux / Windows 上同样可用（需要 ffmpeg、pango、LaTeX�
 - Vaswani et al., *Attention Is All You Need*, NeurIPS 2017. [arXiv:1706.03762](https://arxiv.org/abs/1706.03762)
 - 3Blue1Brown, *Attention in transformers, visually explained*（本片的视觉风格参考）
 - [Qwen3-TTS](https://github.com/QwenLM/Qwen3-TTS) · [mlx-audio](https://github.com/Blaizzy/mlx-audio)
+
+## 另一部：小爱同学 · 九年（2017 → 2026）
+
+[`xiaoai/`](xiaoai/) 是一支约 89 秒的动画短片，讲小爱同学从 2017 年的 AI 音箱一路走到 2026 年的超级小爱 2.0。
+画面由 HTML + 确定性的 `render(t)` 逐帧生成，配乐用 numpy 原创合成，按画面卡点。
+构建方法：`cd xiaoai && npm install && python3 build.py`。分镜和资料来源见 [xiaoai/README.md](xiaoai/README.md)。

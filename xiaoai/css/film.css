@@ -1,0 +1,71 @@
+/* 小爱同学 · 九年 —— 画面样式（1920×1080 固定舞台） */
+html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+#stage {
+  position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; overflow: hidden;
+  transform-origin: 0 0; background: #F6F6F3; color: #0D0E12;
+  font-family: MiSans, 'PingFang SC', 'Noto Sans SC', sans-serif;
+  -webkit-font-smoothing: antialiased; font-kerning: normal;
+}
+canvas.layer { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; pointer-events: none; }
+.scene { position: absolute; inset: 0; display: none; transform-origin: 50% 50%; }
+.abs { position: absolute; }
+.ch { display: inline-block; }
+.nowrap { white-space: nowrap; }
+
+/* 文字层级 */
+.kicker { font-weight: 500; font-size: 26px; letter-spacing: .16em; color: #6E727B; }
+.hl { font-weight: 900; font-size: 96px; line-height: 1.12; letter-spacing: -.01em; white-space: nowrap; }
+.hl .l { display: block; }
+.sub { font-weight: 400; font-size: 32px; line-height: 1.55; color: #6E727B; white-space: nowrap; }
+.sub b { font-weight: 600; color: #2A2D33; }
+.grad { background-image: linear-gradient(100deg, #FF8A78 0%, #FF5F9E 24%, #3D8BFF 54%, #06C7F0 74%, #12E2AE 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent; }
+.dark .sub { color: #9DA2AC; }
+.dark .sub b { color: #E8EAEE; }
+.dark .hl { color: #F4F5F7; }
+
+.chip { display: inline-flex; align-items: center; gap: 10px; padding: 12px 22px; border-radius: 999px;
+  font-weight: 500; font-size: 24px; background: #fff; color: #2A2D33; white-space: nowrap;
+  box-shadow: 0 8px 28px rgba(16, 24, 40, .08), 0 1px 2px rgba(16, 24, 40, .06); }
+.chip .dot { width: 10px; height: 10px; border-radius: 50%; }
+.chip.ghost { background: rgba(255,255,255,.06); color: #E6E8EC; box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.14); }
+
+.card { position: absolute; background: #fff; border-radius: 28px;
+  box-shadow: 0 24px 60px rgba(16, 24, 40, .10), 0 2px 6px rgba(16, 24, 40, .05); }
+.dark .card { background: rgba(22, 24, 32, .72); box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.08), 0 30px 80px rgba(0,0,0,.5); color: #EEF0F3; }
+
+/* 气泡 */
+.bub { position: absolute; padding: 20px 28px; border-radius: 30px; font-size: 30px; line-height: 1.35; font-weight: 500; white-space: nowrap; }
+.bub.me { background: #0D0E12; color: #fff; border-bottom-right-radius: 10px; }
+.bub.ai { background: #fff; color: #0D0E12; border-bottom-left-radius: 10px;
+  box-shadow: 0 18px 44px rgba(16,24,40,.10), 0 1px 2px rgba(16,24,40,.06); }
+.dark .bub.ai { background: #171A22; color: #EEF0F3; box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.08); }
+.dark .bub.me { background: #F4F5F7; color: #0D0E12; }
+.bub .who { display: block; font-size: 18px; font-weight: 500; letter-spacing: .08em; opacity: .55; margin-bottom: 4px; }
+
+/* 年份里程表 */
+.odo { display: inline-flex; font-weight: 900; font-size: 168px; line-height: 1; letter-spacing: -.035em; font-variant-numeric: tabular-nums; }
+.odo-col { position: relative; display: inline-block; overflow: hidden; height: 1.02em; }
+.odo-d { position: absolute; left: 0; top: .01em; will-change: transform; }
+.odo-sizer { visibility: hidden; display: inline-block; padding-top: .01em; }
+
+/* HUD */
+#hud { position: absolute; inset: 0; pointer-events: none; }
+#hud-brand { position: absolute; left: 76px; top: 58px; display: flex; align-items: center; gap: 16px; font-size: 22px; font-weight: 600; letter-spacing: .04em; }
+#hud-brand .sep { width: 1.5px; height: 20px; background: currentColor; opacity: .25; }
+#hud-brand .light { font-weight: 400; opacity: .55; letter-spacing: .1em; }
+#tl { position: absolute; left: 150px; top: 1000px; width: 1620px; height: 40px; }
+#tl .base { position: absolute; left: 0; top: 0; height: 2px; width: 100%; border-radius: 2px; }
+#tl .fill { position: absolute; left: 0; top: 0; height: 2px; border-radius: 2px;
+  background: linear-gradient(90deg, #FF8A78, #FF5F9E 30%, #3D8BFF 60%, #12E2AE); }
+#tl .head { position: absolute; top: -6px; width: 14px; height: 14px; margin-left: -7px; border-radius: 50%; background: #fff;
+  box-shadow: 0 0 0 4px rgba(61,139,255,.25), 0 0 18px rgba(61,139,255,.6); }
+#tl .tick { position: absolute; top: -3px; width: 8px; height: 8px; margin-left: -4px; border-radius: 50%; }
+#tl .lab { position: absolute; top: 16px; transform: translateX(-50%); font-size: 18px; font-weight: 500; letter-spacing: .06em; font-variant-numeric: tabular-nums; }
+
+/* 播放器（浏览器里看时用；渲染时隐藏） */
+#ctl { position: fixed; left: 0; right: 0; bottom: 0; height: 46px; display: flex; align-items: center; gap: 14px; padding: 0 16px;
+  background: rgba(10,10,14,.82); color: #ddd; font: 13px/1 -apple-system, 'PingFang SC', sans-serif; z-index: 9; }
+#ctl button { background: #fff; color: #000; border: 0; border-radius: 6px; padding: 7px 12px; font-weight: 600; cursor: pointer; }
+#ctl input { flex: 1; }
+body.render #ctl { display: none; }

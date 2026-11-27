@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>小爱同学 · 九年</title>
+<link rel="stylesheet" href="node_modules/misans/lib/Normal/MiSans-Heavy.min.css">
+<link rel="stylesheet" href="node_modules/misans/lib/Normal/MiSans-Bold.min.css">
+<link rel="stylesheet" href="node_modules/misans/lib/Normal/MiSans-Semibold.min.css">
+<link rel="stylesheet" href="node_modules/misans/lib/Normal/MiSans-Medium.min.css">
+<link rel="stylesheet" href="node_modules/misans/lib/Normal/MiSans-Regular.min.css">
+<link rel="stylesheet" href="node_modules/misans/lib/Normal/MiSans-Light.min.css">
+<link rel="stylesheet" href="node_modules/misans/lib/Normal/MiSans-ExtraLight.min.css">
+<link rel="stylesheet" href="css/film.css">
+</head>
+<body>
+<div id="stage">
+  <canvas id="bg" class="layer" width="1920" height="1080"></canvas>
+  <canvas id="fx" class="layer" width="1920" height="1080"></canvas>
+  <div id="scenes"></div>
+  <div id="hud"></div>
+  <canvas id="top" class="layer" width="1920" height="1080"></canvas>
+</div>
+<div id="ctl"><button id="play">▶ 播放</button><span id="tc">0.00</span><input id="scrub" type="range" min="0" max="1000" value="0"><span>空格 播放/暂停 · ←/→ 跳 1 秒</span></div>
+<audio id="music" src="build/music.m4a" preload="auto"></audio>
+<script src="js/core.js"></script>
+<script src="js/logo.js"></script>
+<script src="js/scenes.js"></script>
+<script src="js/player.js"></script>
+</body>
+</html>
