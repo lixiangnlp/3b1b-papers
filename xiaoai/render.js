@@ -43,7 +43,7 @@ async function stills() {
 async function worker(out, f0, f1, fps) {
   const { browser, page } = await openPage();
   const ff = spawn('ffmpeg', ['-y', '-loglevel', 'error', '-f', 'image2pipe', '-framerate', String(fps), '-c:v', 'png', '-i', '-',
-    '-c:v', 'libx264', '-preset', 'slow', '-crf', '15', '-pix_fmt', 'yuv420p', '-profile:v', 'high', '-r', String(fps),
+    '-c:v', 'libx264', '-preset', 'medium', '-tune', 'animation', '-crf', '17', '-maxrate', '22M', '-bufsize', '44M', '-pix_fmt', 'yuv420p', '-profile:v', 'high', '-r', String(fps),
     '-x264-params', 'keyint=' + fps * 2 + ':min-keyint=' + fps, out], { stdio: ['pipe', 'inherit', 'inherit'] });
   const t0 = Date.now();
   for (let i = f0; i < f1; i++) {

@@ -137,12 +137,12 @@ function drawBG(t) {
     v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, `rgba(0,0,0,${0.55 * vig})`);
     ctx.fillStyle = v; ctx.fillRect(0, 0, W, H);
   }
+  // 静态抖动：只用来打散暗部/浅色渐变在 8 位视频里的色带。
+  // 不逐帧变化，否则编码器得为随机噪点付出巨大的码率。
   ctx.save();
-  ctx.globalAlpha = vig > 0.5 ? 0.06 : 0.035;
-  ctx.globalCompositeOperation = vig > 0.5 ? 'screen' : 'multiply';
-  const fr = Math.floor(t * 30);
-  const ox = Math.floor(rnd(fr) * 256), oy = Math.floor(rnd(fr + 7.7) * 256);
-  for (let x = -ox; x < W; x += 256) for (let y = -oy; y < H; y += 256) ctx.drawImage(grainCv, x, y);
+  if (vig > 0.02) { ctx.globalAlpha = 0.03 * vig; ctx.globalCompositeOperation = 'screen'; }
+  else { ctx.globalAlpha = 0.012; ctx.globalCompositeOperation = 'multiply'; }
+  for (let x = 0; x < W; x += 256) for (let y = 0; y < H; y += 256) ctx.drawImage(grainCv, x, y);
   ctx.restore();
 }
 
