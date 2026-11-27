@@ -137,7 +137,7 @@ def clap():
 
 def hat(d=0.06, open_=False):
     t = tt(d if not open_ else 0.28)
-    return hp(rng.standard_normal(len(t)), 7200, 3) * np.exp(-t * (60 if not open_ else 14))
+    return soft_attack(hp(rng.standard_normal(len(t)), 7200, 3) * np.exp(-t * (60 if not open_ else 14)), 0.8)
 
 
 def shaker():
@@ -207,11 +207,19 @@ def rev_swell(d=1.0):
     return n * ((t / d) ** 3)[:, None] * 0.6
 
 
+def soft_attack(x, ms=1.5):
+    """给极短的瞬态加一点起音斜坡：听感几乎不变，但 AAC 编码不再在这里过冲"""
+    n = min(len(x), int(ms / 1000 * SR))
+    x = x.copy()
+    x[:n] *= np.linspace(0, 1, n) ** 2
+    return x
+
+
 def tick():
     t = tt(0.03)
-    n = bp(rng.standard_normal(len(t)), 1800, 7000) * np.exp(-t * 420)
+    n = bp(rng.standard_normal(len(t)), 1800, 6000) * np.exp(-t * 380)
     s = 0.5 * np.sin(2 * np.pi * 3100 * t) * np.exp(-t * 300)
-    return (n + s) * 0.9
+    return soft_attack((n + s) * 0.8)
 
 
 def pop(f0=520, f1=1250, d=0.1):
@@ -227,8 +235,8 @@ def blip(f=880, up=1.33, d=0.16):
 
 
 def typeclick():
-    t = tt(0.012)
-    return bp(rng.standard_normal(len(t)), 2500, 8000) * np.exp(-t * 600)
+    t = tt(0.016)
+    return soft_attack(bp(rng.standard_normal(len(t)), 2000, 6500) * np.exp(-t * 450), 2.0) * 0.8
 
 
 # ------------------------------------------------------------------ 和声
@@ -503,6 +511,36 @@ def reverb_ir(d=2.6, pre=0.02, damp=6000):
     return ir
 
 
+def true_peak(x, os_=4):
+    from scipy.signal import resample_poly
+    return np.abs(resample_poly(x, os_, 1, axis=0)).max()
+
+
+def true_peak_limit(x, ceiling, os_=4, look=0.0015):
+    """4 倍过采样的前视限幅：按真峰值（含采样点之间的峰）算增益，先取窗口最小值再平滑，保证不过冲"""
+    from scipy.signal import resample_poly
+    from scipy.ndimage import minimum_filter1d, uniform_filter1d
+    env = np.abs(resample_poly(x, os_, 1, axis=0)).max(1)
+    g = np.minimum(1.0, ceiling / np.maximum(env, 1e-9))
+    L = max(1, int(look * SR * os_))
+    g = uniform_filter1d(minimum_filter1d(g, size=2 * L + 1), size=L + 1)
+    g = g[::os_][:len(x)]
+    return x * g[:, None], float((g < 0.999).mean())
+
+
+def master(x, target_lufs=-14.0, ceiling_dbtp=-1.5):
+    """母带：响度归一到目标 LUFS（-14 是各平台常用值），真峰值限制在 ceiling_dbtp"""
+    import pyloudnorm as pyln
+    meter = pyln.Meter(SR)
+    c = 10 ** (ceiling_dbtp / 20) * 0.97
+    frac = 0.0
+    for _ in range(4):
+        x = x * 10 ** ((target_lufs - meter.integrated_loudness(x)) / 20)
+        x, frac = true_peak_limit(x, c)
+    print(f'master: {meter.integrated_loudness(x):.2f} LUFS, true peak {20 * np.log10(true_peak(x)):.2f} dBTP, limiter active on {frac * 100:.2f}% of samples')
+    return x
+
+
 def mix():
     intro()
     arrangement()
@@ -532,9 +570,10 @@ def mix():
     t = np.arange(N) / SR
     out *= (np.minimum(1, t / 0.05) * np.clip((T + 0.3 - t) / 1.4, 0, 1))[:, None]
     pk = np.abs(out).max()
-    out = np.tanh(out / pk * 1.25) / np.tanh(1.25) * 0.89
+    out = np.tanh(out / pk * 1.25) / np.tanh(1.25)
+    out = master(out, -14.0, -2.5)   # AAC 编码会让真峰值再抬高 1–1.5 dB，这里多留余量
     from scipy.io import wavfile
-    wavfile.write('build/music.wav', SR, (out * 32767).astype(np.int16))
+    wavfile.write('build/music.wav', SR, out.astype(np.float32))
     # 频谱占比自检（中频为主，笔记本/手机外放才听得清）
     m = out.mean(1)
     seg = m[int(SR * 12):int(SR * 42)]

@@ -9,7 +9,6 @@
 产物：build/xiaoai_2017-2026.mp4（1920×1080，H.264 High + AAC，-14 LUFS），
       build/music.m4a（给 index.html 浏览器播放用）
 """
-import json
 import shutil
 import subprocess
 import sys
@@ -30,26 +29,17 @@ def audio():
     run([sys.executable, 'music.py'])
 
 
-def loudnorm_args(src):
-    r = subprocess.run(['ffmpeg', '-hide_banner', '-i', str(src), '-af', 'loudnorm=I=-14:TP=-1.5:LRA=11:print_format=json', '-f', 'null', '-'],
-                       capture_output=True, text=True)
-    txt = r.stderr
-    j = json.loads(txt[txt.rindex('{'):txt.rindex('}') + 1])
-    return (f"loudnorm=I=-14:TP=-1.5:LRA=11:measured_I={j['input_i']}:measured_TP={j['input_tp']}:"
-            f"measured_LRA={j['input_lra']}:measured_thresh={j['input_thresh']}:offset={j['target_offset']}:linear=true")
-
-
 def mux():
-    ln = loudnorm_args(BUILD / 'music.wav')
+    # music.py 已经做好母带（-14 LUFS、真峰值 -2.5 dBTP），这里只编码，不再做响度处理
     run(['ffmpeg', '-y', '-hide_banner', '-loglevel', 'error', '-i', str(BUILD / 'silent.mp4'), '-i', str(BUILD / 'music.wav'),
-         '-map', '0:v', '-map', '1:a', '-c:v', 'copy', '-af', ln + ',aresample=48000', '-c:a', 'aac', '-b:a', '256k', '-ac', '2',
+         '-map', '0:v', '-map', '1:a', '-c:v', 'copy', '-c:a', 'aac', '-b:a', '256k', '-ac', '2',
          '-shortest', '-movflags', '+faststart', str(OUT)])
-    run(['ffmpeg', '-y', '-hide_banner', '-loglevel', 'error', '-i', str(BUILD / 'music.wav'), '-af', ln, '-c:a', 'aac', '-b:a', '192k',
+    run(['ffmpeg', '-y', '-hide_banner', '-loglevel', 'error', '-i', str(BUILD / 'music.wav'), '-c:a', 'aac', '-b:a', '192k',
          str(BUILD / 'music.m4a')])
     # 验收
     run(['ffprobe', '-v', 'error', '-show_entries', 'stream=codec_name,profile,width,height,r_frame_rate,pix_fmt,channels,sample_rate:format=duration,size',
          '-of', 'compact', str(OUT)])
-    r = subprocess.run(['ffmpeg', '-hide_banner', '-nostats', '-i', str(OUT), '-vn', '-af', 'ebur128=peak=true', '-f', 'null', '-'],
+    r = subprocess.run(['ffmpeg', '-hide_banner', '-nostats', '-i', str(OUT), '-vn', '-af', 'ebur128=peak=true+sample', '-f', 'null', '-'],
                        capture_output=True, text=True)
     print('\n'.join(l for l in r.stderr.splitlines()[-14:] if any(k in l for k in ('I:', 'LRA:', 'Peak:'))))
     print('->', OUT)
